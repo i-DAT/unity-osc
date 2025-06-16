@@ -1,0 +1,6 @@
+{
+    "name": "org.i-dat.osc",
+    "version": "1.0.0",
+    "displayName": "OSC",
+    "description": "Simple OSC parser and server for Unity"
+}
