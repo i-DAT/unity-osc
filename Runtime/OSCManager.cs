@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Linq;
 using UnityEngine;
 
 public class OSCManager : MonoBehaviour
@@ -11,6 +12,7 @@ public class OSCManager : MonoBehaviour
     public int port = 8000;
 
     ConcurrentQueue<OSCMessage> queue;
+    Thread sender;
     Thread listener;
 
     Dictionary<string, Action<OSCMessage>> handlers;
@@ -23,6 +25,12 @@ public class OSCManager : MonoBehaviour
         handlers = new Dictionary<string, Action<OSCMessage>>();
         defaultHandler = DefaultHandler;
 
+
+        // Start the sender thread to broadcast this IP.
+        sender = new Thread(Send);
+        sender.IsBackground = true;
+        sender.Start();
+
         // Start the listener thread to parse OSC messages. This will be aborted on cleanup.
         listener = new Thread(Listen);
         listener.IsBackground = true;
@@ -31,6 +39,7 @@ public class OSCManager : MonoBehaviour
 
     void OnDestroy()
     {
+        sender.Abort();
         listener.Abort();
     }
 
@@ -52,6 +61,22 @@ public class OSCManager : MonoBehaviour
     void DefaultHandler(OSCMessage msg)
     {
         Debug.Log($"Unhandled message: {msg.address} {msg.args}");
+    }
+
+    void Send()
+    {
+        // Loop send the host name, IP, and port to the broadcast IP.
+        using var client = new UdpClient("239.255.255.250", 4001);
+        var hostName = Dns.GetHostName();
+        var hostIp = Dns.GetHostEntry(hostName).AddressList
+                    .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork)?
+                    .ToString();
+        while (true)
+        {
+            byte[] data = OSCBuilder.BuildMessage(new OSCMessage("/host", new dynamic[] { hostName, hostIp, port }));
+            client.Send(data, data.Length);
+            Thread.Sleep(1000);
+        }
     }
 
     void Listen()
