@@ -1,21 +1,20 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-public class OSCBuilder
+public class OscBuilder
 {
     public static bool IsLittleEndian { set; get; } = false;
 
-    public static byte[] BuildMessage(OSCMessage message)
+    public static byte[] BuildMessage(OscMessage message)
     {
         var stream = new MemoryStream();
 
-        Write(stream, message.address);
-        var args = new char[message.args.Length + 1];
+        Write(stream, message.Address);
+        var args = new char[message.Args.Length + 1];
         args[0] = ',';
-        for (int i = 0; i < message.args.Length; i++) args[i + 1] = message.args[i] switch
+        for (int i = 0; i < message.Args.Length; i++) args[i + 1] = message.Args[i] switch
         {
             int => 'i',
             float => 'f',
@@ -23,7 +22,7 @@ public class OSCBuilder
             _ => throw new ArgumentException("Invalid argument type")
         };
         Write(stream, new string(args));
-        Array.ForEach(message.args, arg => Write(stream, arg));
+        Array.ForEach(message.Args, arg => Write(stream, arg as dynamic));
 
         return stream.ToArray();
     }

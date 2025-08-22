@@ -1,10 +1,10 @@
 using System;
 
-public class OSCParser
+public class OscParser
 {
     public static bool IsLittleEndian { set; get; } = false;
 
-    public static OSCMessage ParseMessage(byte[] packet)
+    public static OscMessage ParseMessage(byte[] packet)
     {
         // An OSC message consists of an address string, a format string, then any number of arguments.
 
@@ -12,6 +12,7 @@ public class OSCParser
         var index = 0;
         var address = ParseString(packet, ref index);
         if (!address.StartsWith("/")) throw new FormatException("Invalid message address");
+        address = address[1..];
 
         // The format string must start with a ',' to be valid.
         var tag = ParseString(packet, ref index);
@@ -33,7 +34,7 @@ public class OSCParser
 
         if (index != packet.Length) throw new FormatException("Extra data in packet buffer");
 
-        return new OSCMessage(address, args);
+        return new OscMessage(address, args);
     }
 
     public static int ParseInt(byte[] packet, ref int index)
@@ -71,19 +72,3 @@ public class OSCParser
     }
 }
 
-public class OSCMessage
-{
-    public string address;
-    public dynamic[] args;
-
-    public OSCMessage(string address, dynamic[] args)
-    {
-        this.address = address;
-        this.args = args;
-    }
-
-    public override string ToString()
-    {
-        return $"{address} {string.Join(", ", args)}";
-    }
-}
